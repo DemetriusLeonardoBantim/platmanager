@@ -18,6 +18,8 @@ target 'MyApp' do
 
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
 
+  pod 'RNDateTimePicker', :path => '../node_modules/@react-native-community/datetimepicker'
+
   target 'MyAppTests' do
     inherit! :complete
     # Pods for testing

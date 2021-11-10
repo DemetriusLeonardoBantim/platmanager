@@ -25,7 +25,8 @@ export function Welcome() {
       </Text>
 
       <Button
-        title={<Icon name="arrow-right" size={20} onPress={handleStart} />}
+        title={<Icon name="arrow-right" size={20} />}
+        onPress={handleStart}
       />
     </SafeAreaView>
   );

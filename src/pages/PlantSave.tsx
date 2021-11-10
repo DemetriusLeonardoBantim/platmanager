@@ -1,49 +1,119 @@
-import React from 'react';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, {useState} from 'react';
 import {
   Alert,
   StyleSheet,
   Text,
   View,
   Image,
-  ScrollView,
   Platform,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import {SvgFromUri} from 'react-native-svg';
 import waterDrop from '../assets/waterdrop.png';
 import {Button} from '../components/Button';
 import colors from '../styles/colors';
+import {useNavigation, useRoute} from '@react-navigation/core';
+import DateTimePicker, {Event} from '@react-native-community/datetimepicker';
+import {format, isBefore} from 'date-fns';
+import {loadPlant, PlantProps, savePlant} from '../libs/storage';
+
+interface Params {
+  plant: PlantProps;
+}
 
 export function PlantSave() {
-  return (
-    <View style={styles.container}>
-      <View style={styles.plantInfo}>
-        <SvgFromUri uri="" height={150} width={150} />
-        <Text style={styles.plantName}>Nome da planta aqui</Text>
-        <Text style={styles.plantAbout}>
-          Lorem Ipsum is simply dummy text of the printing and typesetting
-          industry. Lorem Ipsum has been the industry's standard dummy text ever
-          since the 1500s, when an unknown printer took a galley of type and
-          scrambled it to make a type specimen book. It has survived not only
-          five centuries, but also the leap into electronic typesetting,
-          remaining essentially unchanged.
-        </Text>
-      </View>
-      <View style={styles.controller}>
-        <View style={styles.tipContainer}>
-          <Image source={waterDrop} style={styles.tipImage} />
-          <Text style={styles.tipText}>
-            Lorem Ipsum is simply dummy text of the printing and typesetting
-            industry.
-          </Text>
-        </View>
-        <Text style={styles.alertLabel}>
-          Escolha o melhor horario para ser lembrado
-        </Text>
+  const [selectedDateTime, setSelectedDateTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
 
-        <Button title="Cadastrar planta" onPress={() => {}} />
+  const route = useRoute();
+  const {plant} = route.params as Params;
+
+  const navigation = useNavigation();
+
+  function handleChangeTime(event: Event, dateTime: Date | undefined) {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(oldState => !oldState);
+    }
+    if (dateTime && isBefore(dateTime, new Date())) {
+      setSelectedDateTime(new Date());
+      return Alert.alert('Escolha uma hora no futuro!');
+    }
+
+    if (dateTime) {
+      setSelectedDateTime(dateTime);
+    }
+  }
+
+  function handleOpenDatetimePickerForAndroid() {
+    setShowDatePicker(oldState => !oldState);
+  }
+
+  async function handleSave() {
+    const data = await loadPlant();
+    try {
+      await savePlant({
+        ...plant,
+        dateTimeNotification: selectedDateTime,
+      });
+
+      navigation.navigate('Confirmation', {
+        title: 'Tudo certo',
+        subtitle:
+          'Fique tranquilo que sempre vamos lembrar voce de cuidar da sua plantinha com muito cuidado',
+        buttonTitle: 'Comecar',
+        icon: 'smile',
+        nextScreen: 'MyPlants',
+      });
+    } catch {
+      Alert.alert('Nao foi possivel salvar essa planta!');
+    }
+  }
+
+  return (
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.container}>
+      <View style={styles.container}>
+        <View style={styles.plantInfo}>
+          <SvgFromUri uri={plant.photo} height={150} width={150} />
+          <Text style={styles.plantName}>{plant.name}</Text>
+          <Text style={styles.plantAbout}>{plant.about}</Text>
+        </View>
+        <View style={styles.controller}>
+          <View style={styles.tipContainer}>
+            <Image source={waterDrop} style={styles.tipImage} />
+            <Text style={styles.tipText}>{plant.water_tips}</Text>
+          </View>
+          <Text style={styles.alertLabel}>
+            Escolha o melhor horario para ser lembrado
+          </Text>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDateTime}
+              mode="time"
+              display="spinner"
+              onChange={handleChangeTime}
+            />
+          )}
+
+          {Platform.OS === 'android' && (
+            <TouchableOpacity
+              onPress={handleOpenDatetimePickerForAndroid}
+              style={styles.dateTimePickerButton}>
+              <Text style={styles.dateTimePickerText}>{`Mudar ${format(
+                selectedDateTime,
+                'HH:mm',
+              )}`}</Text>
+            </TouchableOpacity>
+          )}
+
+          <Button title="Cadastrar planta" onPress={handleSave} />
+        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -104,5 +174,14 @@ const styles = StyleSheet.create({
     color: colors.heading,
     fontSize: 12,
     marginBottom: 5,
+  },
+  dateTimePickerText: {
+    color: colors.heading,
+    fontSize: 24,
+  },
+  dateTimePickerButton: {
+    width: '100%',
+    alignItems: 'center',
+    padding: 40,
   },
 });

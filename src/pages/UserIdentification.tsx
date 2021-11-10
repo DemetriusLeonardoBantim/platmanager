@@ -42,7 +42,14 @@ export function UserIdentification() {
     }
     await AsyncStorage.setItem('@plantmanager:user', name);
 
-    navigation.navigate('Confirmation');
+    navigation.navigate('Confirmation', {
+      title: 'Prontinho',
+      subtitle:
+        'Agora vamos comecar a cuidar das suas plantinhas com muito cuidado.',
+      buttonTitle: 'Comecar',
+      icon: 'smile',
+      nextScreen: 'PlantSelect',
+    });
   }
 
   return (
